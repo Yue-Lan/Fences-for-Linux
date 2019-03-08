@@ -23,6 +23,8 @@ QT_END_NAMESPACE
 
 #include <QString>
 
+#include <QAction>
+
 //#include <QSettings>
 
 class FMIconView : public QListView
@@ -45,6 +47,8 @@ private:
     QMenu *oneSelectedMenu;
     QMenu *pluralitySelectedMenu;
 
+    QAction *pasteAction;
+
     int mId = -1;
 
     void mouseReleaseEvent(QMouseEvent *e) override;
@@ -52,6 +56,11 @@ private:
     void keyReleaseEvent(QKeyEvent *e) override;
     void paintEvent(QPaintEvent *e) override;
     void closeEvent(QCloseEvent *e) override;
+
+    void moveSelectionToDesktop();
+    void copySelectionToClipboard();
+    void deleteSelection();
+    void pasteFilesInClipboard();
 
 protected:
     void dragEnterEvent(QDragEnterEvent *e) override;

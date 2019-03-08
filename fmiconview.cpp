@@ -39,6 +39,10 @@
 
 #include <QVBoxLayout>
 
+#include <QApplication>
+#include <QClipboard>
+#include <QMimeData>
+
 FMIconView::~FMIconView(){
 
     delete fileSystemModel;
@@ -123,17 +127,43 @@ FMIconView::FMIconView(int id)
     setDragDropMode(QListView::DragDrop);
     setResizeMode(QListView::Adjust);
 
-    //connect(this, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(openFileOrDirectory(QModelIndex)));
     connect(this, &FMIconView::doubleClicked, this, &FMIconView::openFileOrDirectory);
     qDebug()<<QApplication::desktopFileName();
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     blankMenu = new QMenu;
-    QAction *updir = new QAction;
+
+    QAction *updir = new QAction(blankMenu);
     updir->setText("up");
-    blankMenu->addAction(updir);
-    connect(this, &FMIconView::customContextMenuRequested, this, &FMIconView::showMenu);
     connect(updir, &QAction::triggered, this, &FMIconView::backToUp);
+
+    QAction *paste = new QAction(blankMenu);
+    pasteAction = paste;
+    paste->setText("paste");
+    connect(paste, &QAction::triggered, this, &FMIconView::pasteFilesInClipboard);
+
+    blankMenu->addAction(updir);
+    blankMenu->addAction(paste);
+
+    oneSelectedMenu = new QMenu;
+    QAction *moveToDesktopAction = new QAction(oneSelectedMenu);
+    moveToDesktopAction->setText("move to desktop");
+    connect(moveToDesktopAction, &QAction::triggered, this, &FMIconView::moveSelectionToDesktop);
+
+    QAction *copyAction = new QAction(oneSelectedMenu);
+    copyAction->setText("copy to clipboard");
+    connect(copyAction, &QAction::triggered, this, &FMIconView::copySelectionToClipboard);
+
+    QAction *deleteAction = new QAction(oneSelectedMenu);
+    deleteAction->setText("delete, not to trash");
+    connect(deleteAction, &QAction::triggered, this, &FMIconView::deleteSelection);
+
+    oneSelectedMenu->addAction(moveToDesktopAction);
+    oneSelectedMenu->addAction(copyAction);
+    oneSelectedMenu->addAction(deleteAction);
+
+    //connect(this, &FMIconView::customContextMenuRequested, this, &FMIconView::showMenu);
+
 
     fileSystemModel = model;
     itemSelectionModel = selections;
@@ -274,8 +304,8 @@ void FMIconView::trayIconAction(QSystemTrayIcon::ActivationReason reason){
 void FMIconView::openFileOrDirectory(QModelIndex m){
     qDebug()<<m<<fileSystemModel->fileInfo(m);
     if (fileSystemModel->isDir(m)){
-        //setRootIndex(m);
-        QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
+        setRootIndex(m);
+        //QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
     } else {
         QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
     }
@@ -295,18 +325,29 @@ void FMIconView::backToUp(){
 
 void FMIconView::mouseReleaseEvent(QMouseEvent *e){
     qDebug()<<"mouseReleaseEvent";
+
+    if (e->button()==Qt::RightButton) {
+        if (!this->indexAt(e->pos()).isValid()) {
+            if (!QApplication::clipboard()->mimeData()->hasUrls()) {
+                pasteAction->setEnabled(false);
+            } else {
+                pasteAction->setEnabled(true);
+            }
+            blankMenu->exec(QCursor::pos());
+        } else {
+            if (this->selectedIndexes().count()==1) {
+                oneSelectedMenu->exec(QCursor::pos());
+            } else {
+                //TODO: use pluralitySelectedMenu here
+                oneSelectedMenu->exec(QCursor::pos());
+            }
+        }
+    }
+
     QListView::mouseReleaseEvent(e);
 }
 
 void FMIconView::mouseMoveEvent(QMouseEvent *e) {
-    //this is emitted when mouse button pressed, but how get event without mouse pressed?
-                  /*
-    qDebug()<<"mouse move event";
-    QModelIndex index = indexAt(e->pos());
-    if (index.isValid()) {
-        qDebug()<<index.model()->itemData(index);
-    }
-              */
     QListView::mouseMoveEvent(e);
 }
 
@@ -323,19 +364,110 @@ void FMIconView::paintEvent(QPaintEvent *e){
     */
     QListView::paintEvent(e);
 }
+
+void FMIconView::moveSelectionToDesktop() {
+    QModelIndexList selectionList = this->selectedIndexes();
+    for (int i = 0; i < selectionList.count(); i++) {
+        QModelIndex tmpIndex = selectionList.at(i);
+        QString sourcePath = fileSystemModel->filePath(tmpIndex);
+        QString destPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + QString("/") + fileSystemModel->fileName(tmpIndex);
+        if (fileSystemModel->isDir(tmpIndex)) {
+            QDir dirHelper;
+            dirHelper.rename(sourcePath, destPath);
+        } else {
+            QFile fileHelper;
+            fileHelper.rename(sourcePath, destPath);
+        }
+    }
+}
+
+void FMIconView::copySelectionToClipboard() {
+    QModelIndexList selectionList = this->selectedIndexes();
+    QMimeData *selectionMimeData = fileSystemModel->mimeData(selectionList);
+    QApplication::clipboard()->setMimeData(selectionMimeData);
+}
+
+void FMIconView::deleteSelection() {
+    QModelIndexList selectionList = this->selectedIndexes();
+    for (int i = 0; i < selectionList.count(); i++) {
+        QModelIndex tmpIndex = selectionList.at(i);
+        QString sourcePath = fileSystemModel->filePath(tmpIndex);
+        if (fileSystemModel->isDir(tmpIndex)) {
+            QDir dirHelper;
+            dirHelper.setPath(sourcePath);
+            dirHelper.removeRecursively();
+        } else {
+            QFile fileHelper;
+            fileHelper.remove(sourcePath);
+        }
+    }
+}
+
 //TODO: we need support over one widget, so every settings should have a diffrent name.
 void FMIconView::readSettings() {
+    /*
     QSettings settings;
     settings.beginGroup("my_listview1");
     restoreGeometry(settings.value("geometry").toByteArray());
     qDebug()<<settings.value("geometry");
     settings.endGroup();
+    */
 }
 
 void FMIconView::writeSettings() {
+    /*
     qDebug()<<"write settings";
     QSettings settings;
     settings.beginGroup("my_listview1");
     settings.setValue("geometry",saveGeometry());
     settings.endGroup();
+    */
 }
+
+bool copyRecursively(const QString &srcFilePath, const QString &tgtFilePath)
+{
+    QFileInfo srcFileInfo(srcFilePath);
+    if (srcFileInfo.isDir()) {
+        QDir targetDir(tgtFilePath);
+        bool ok = targetDir.cdUp();
+        if (ok && !targetDir.mkdir(QFileInfo(tgtFilePath).fileName())) return false;
+
+        QDir sourceDir(srcFilePath);
+        QStringList fileNames = sourceDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
+        foreach(const QString &fileName, fileNames) {
+            const QString newSrcFilePath = srcFilePath + QLatin1Char('/') + fileName;
+            const QString newTgtFilePath = tgtFilePath + QLatin1Char('/') + fileName;
+            if (!copyRecursively(newSrcFilePath, newTgtFilePath)) return false;
+        }
+    }
+    else {
+        if (!QFile::copy(srcFilePath, tgtFilePath)) return false;
+    }
+
+    return true;
+}
+
+void FMIconView::pasteFilesInClipboard() {
+    QList<QUrl> urls = QApplication::clipboard()->mimeData()->urls();
+    for(int i = 0; i<urls.count(); i++) {
+        QUrl tmpUrl = urls.at(i);
+        qDebug()<<"tmpUrl: "<<tmpUrl;
+        QFileInfo tmpInfo = QFileInfo(tmpUrl.path());
+        QString filename = tmpInfo.fileName();
+        qDebug()<<filename;
+        qDebug()<<QString(QString(".iconviews_on_desktop_test/")+QString::number(mId)+QString("/")+filename);
+        QString sourcePath = tmpInfo.filePath();
+        //this is same to fileSystemModel->filePath(this->rootIndex()) here, and more fast.
+        QString destPath = QString(QString(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)+"/.iconviews_on_desktop_test/")+QString::number(mId)+QString("/")+filename);
+        if (tmpInfo.isFile()) {
+            qDebug()<<"is file";
+            qDebug()<<QFile::copy(sourcePath, destPath);
+        } else if (tmpInfo.isDir()) {
+            qDebug()<<"is dir";
+            qDebug()<<copyRecursively(sourcePath, destPath);
+        } else {
+            qDebug()<<"tmpInfo has not type?";
+        }
+    }
+}
+
