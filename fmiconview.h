@@ -48,6 +48,7 @@ private:
     QMenu *pluralitySelectedMenu;
 
     QAction *pasteAction;
+    QAction *updirAction;
 
     int mId = -1;
 
@@ -56,6 +57,8 @@ private:
     void keyReleaseEvent(QKeyEvent *e) override;
     void paintEvent(QPaintEvent *e) override;
     void closeEvent(QCloseEvent *e) override;
+
+    void focusOutEvent(QFocusEvent *e);
 
     void moveSelectionToDesktop();
     void copySelectionToClipboard();

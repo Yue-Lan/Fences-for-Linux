@@ -134,6 +134,7 @@ FMIconView::FMIconView(int id)
     blankMenu = new QMenu;
 
     QAction *updir = new QAction(blankMenu);
+    updirAction = updir;
     updir->setText("up");
     connect(updir, &QAction::triggered, this, &FMIconView::backToUp);
 
@@ -161,6 +162,9 @@ FMIconView::FMIconView(int id)
     oneSelectedMenu->addAction(moveToDesktopAction);
     oneSelectedMenu->addAction(copyAction);
     oneSelectedMenu->addAction(deleteAction);
+
+    //TODO: add pluralitySelectedMenu actions
+    pluralitySelectedMenu = new QMenu;
 
     //connect(this, &FMIconView::customContextMenuRequested, this, &FMIconView::showMenu);
 
@@ -326,6 +330,11 @@ void FMIconView::backToUp(){
 void FMIconView::mouseReleaseEvent(QMouseEvent *e){
     qDebug()<<"mouseReleaseEvent";
 
+    if (fileSystemModel->filePath(rootIndex()) == fileSystemModel->rootPath()) {
+        updirAction->setEnabled(false);
+    } else {
+        updirAction->setEnabled(true);
+    }
     if (e->button()==Qt::RightButton) {
         if (!this->indexAt(e->pos()).isValid()) {
             if (!QApplication::clipboard()->mimeData()->hasUrls()) {
@@ -448,10 +457,12 @@ bool copyRecursively(const QString &srcFilePath, const QString &tgtFilePath)
 }
 
 void FMIconView::pasteFilesInClipboard() {
+    qDebug()<<"pasteFilesInClipboard";
     QList<QUrl> urls = QApplication::clipboard()->mimeData()->urls();
-    for(int i = 0; i<urls.count(); i++) {
+    qDebug()<<urls;
+    for(int i = 0 ; i<urls.count(); i++) {
         QUrl tmpUrl = urls.at(i);
-        qDebug()<<"tmpUrl: "<<tmpUrl;
+        qDebug()<<"pasteFilesInClipboard tmpUrl: "<<tmpUrl;
         QFileInfo tmpInfo = QFileInfo(tmpUrl.path());
         QString filename = tmpInfo.fileName();
         qDebug()<<filename;
@@ -459,15 +470,14 @@ void FMIconView::pasteFilesInClipboard() {
         QString sourcePath = tmpInfo.filePath();
         //this is same to fileSystemModel->filePath(this->rootIndex()) here, and more fast.
         QString destPath = QString(QString(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)+"/.iconviews_on_desktop_test/")+QString::number(mId)+QString("/")+filename);
-        if (tmpInfo.isFile()) {
-            qDebug()<<"is file";
-            qDebug()<<QFile::copy(sourcePath, destPath);
-        } else if (tmpInfo.isDir()) {
-            qDebug()<<"is dir";
-            qDebug()<<copyRecursively(sourcePath, destPath);
-        } else {
-            qDebug()<<"tmpInfo has not type?";
-        }
+        copyRecursively(sourcePath, destPath);
     }
+}
+
+void FMIconView::focusOutEvent(QFocusEvent *e) {
+    if (blankMenu->isHidden() && oneSelectedMenu->isHidden() && pluralitySelectedMenu->isHidden()){
+        this->clearSelection();
+    }
+    QListView::focusOutEvent(e);
 }
 
