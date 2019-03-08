@@ -17,6 +17,7 @@
 #include "settingscontroller.h"
 
 #include <QDebug>
+#include <QPushButton>
 
 int main(int argc, char *argv[])
 {
@@ -35,6 +36,17 @@ int main(int argc, char *argv[])
     //qDebug()<<gsettings.get("org.mate.interface icon-theme");
 
     QIcon::setThemeName("ukui-icon-theme");
+    //QIcon::setThemeName("Humanity");
+    //QIcon::setThemeName("gnome");
+    //QIcon::setThemeName("HighContrast");
+    //QIcon::setThemeName("deepin");
+/*
+    QPushButton bt;
+    const QIcon icon;
+    //bt.setIcon(QIcon::fromTheme("inode-directory", icon));
+    bt.setIcon(QIcon::fromTheme("inode-directory"));
+    bt.show();
+    */
 
 //============================================================
 

@@ -115,7 +115,7 @@ FMIconView::FMIconView(int id)
     //setRootIndex(model->index("/"));
     setSelectionMode(QAbstractItemView::ExtendedSelection);
     setGridSize(QSize(108,108));
-    //setIconSize(QSize(36,36));
+    //setIconSize(QSize(48,48));
 
     setDragEnabled(true);
     //setDropIndicatorShown(true);

@@ -11,10 +11,12 @@ class FMFileIconProvider : public QFileIconProvider
 {
 public:
     FMFileIconProvider();
+    void setIconSize(int size);
     QIcon icon(const QFileInfo &info) const;
 
 private:
     QMimeDatabase *mimeDataBase;
+    int mIconSize = 36;
 };
 
 #endif // FMFILEICONPROVIDER_H
