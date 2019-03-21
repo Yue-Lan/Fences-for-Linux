@@ -9,9 +9,9 @@ class SettingsController : public QObject
 public:
     explicit SettingsController(QObject *parent = nullptr);
 
-signals:
+Q_SIGNALS:
 
-public slots:
+public Q_SLOTS:
     void resetAll();
 };
 

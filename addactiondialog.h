@@ -18,7 +18,7 @@ public:
 private:
     Ui::AddActionDialog *ui;
 
-private slots:
+private Q_SLOTS:
     void addIconView();
 };
 

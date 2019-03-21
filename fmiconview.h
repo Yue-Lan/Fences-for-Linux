@@ -65,12 +65,15 @@ private:
     void deleteSelection();
     void pasteFilesInClipboard();
 
+Q_SIGNALS:
+    void test();
+
 protected:
     void dragEnterEvent(QDragEnterEvent *e) override;
     void dragMoveEvent(QDragMoveEvent *e) override;
     void dropEvent(QDropEvent *e) override;
 
-public slots:
+public Q_SLOTS:
     void trayIconAction(QSystemTrayIcon::ActivationReason reason);
     void openFileOrDirectory(QModelIndex m);
     void showMenu();

@@ -35,7 +35,7 @@ protected:
     // 设置界面标题与图标
     virtual bool eventFilter(QObject *obj, QEvent *event);
 
-private slots:
+private Q_SLOTS:
 
     // 进行最小化、最大化/还原、关闭操作
     void onClicked();

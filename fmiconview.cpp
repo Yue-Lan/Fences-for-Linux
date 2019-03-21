@@ -42,6 +42,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QMimeData>
+#include <QDir>
 
 FMIconView::~FMIconView(){
 
@@ -63,6 +64,8 @@ FMIconView::FMIconView(int id)
     mId = id;
     setAutoFillBackground(true);
     FMModel *model = new FMModel;
+    //model->myComputer();
+
     //QFileSystemModel *model = new QFileSystemModel;
 
     FMFileIconProvider *fileIconProvider = new FMFileIconProvider;
@@ -180,6 +183,7 @@ FMIconView::FMIconView(int id)
     //setTextElideMode(Qt::ElideMiddle);
     setUniformItemSizes(true);
     setMovement(QListView::Snap);
+    //model->setData(model->index("test"), model->myComputer());
 }
 
 void FMIconView::dragEnterEvent(QDragEnterEvent *e){
@@ -308,8 +312,8 @@ void FMIconView::trayIconAction(QSystemTrayIcon::ActivationReason reason){
 void FMIconView::openFileOrDirectory(QModelIndex m){
     qDebug()<<m<<fileSystemModel->fileInfo(m);
     if (fileSystemModel->isDir(m)){
-        setRootIndex(m);
-        //QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
+        //setRootIndex(m);
+        QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
     } else {
         QDesktopServices::openUrl(QUrl("file://"+fileSystemModel->filePath(m)));
     }
@@ -443,9 +447,9 @@ bool copyRecursively(const QString &srcFilePath, const QString &tgtFilePath)
 
         QDir sourceDir(srcFilePath);
         QStringList fileNames = sourceDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
-        foreach(const QString &fileName, fileNames) {
-            const QString newSrcFilePath = srcFilePath + QLatin1Char('/') + fileName;
-            const QString newTgtFilePath = tgtFilePath + QLatin1Char('/') + fileName;
+        for (int i = 0; i < fileNames.count(); i++) {
+            const QString newSrcFilePath = srcFilePath + QLatin1Char('/') + fileNames.at(i);
+            const QString newTgtFilePath = tgtFilePath + QLatin1Char('/') + fileNames.at(i);
             if (!copyRecursively(newSrcFilePath, newTgtFilePath)) return false;
         }
     }

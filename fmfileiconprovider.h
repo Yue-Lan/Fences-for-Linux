@@ -17,6 +17,7 @@ public:
 private:
     QMimeDatabase *mimeDataBase;
     int mIconSize = 36;
+    ~FMFileIconProvider();
 };
 
 #endif // FMFILEICONPROVIDER_H
