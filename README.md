@@ -1,4 +1,6 @@
 # Fences-for-Linux
+This project was re-written to [desktop-file-memos](https://github.com/Yue-Lan/desktop-file-memos).
+
 A desktop classification app Imitating 'Fences' in Windows
 
 # build depends
